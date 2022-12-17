@@ -1,16 +1,10 @@
 <div align="center">
 
-<img src="img/logo_ynov_campus_montpellier.svg" style="width: 200px">
+# TP4 - Kubernetes
 
-# Nom du projet
+![Yoan Ancelly](https://img.shields.io/badge/%F0%9F%94%A5-Yoan%20Ancelly-%2323b2a4)
 
-![Prénom1 Nom1](https://img.shields.io/badge/%F0%9F%94%A5-Prénom1%20Nom1-%2323b2a4)
-![Prénom2 Nom2](https://img.shields.io/badge/%F0%9F%94%A5-Prénom2%20Nom2-%2323b2a4)
-![Prénom3 Nom3](https://img.shields.io/badge/%F0%9F%94%A5-Prénom3%20Nom3-%2323b2a4)
-
-![GitHub last commit](https://img.shields.io/github/last-commit/user/repo)
-
-> Description du projet
+> TP sur Kubernetes
 
 </div>
 
@@ -18,19 +12,326 @@
 
 ## Sommaire
 
-- [Nom du projet](#nom-du-projet)
+- [TP4 - Kubernetes](#tp4---kubernetes)
   - [Sommaire](#sommaire)
-  - [Introduction](#introduction)
-  - [Concept 1](#concept-1)
+  - [Création d'un cluster Kubernetes](#création-dun-cluster-kubernetes)
+    - [Introduction](#introduction)
+    - [Mise en place de l'environnement](#mise-en-place-de-lenvironnement)
+  - [Déploiement de l'application](#déploiement-de-lapplication)
+    - [Déploiement de MongoDB](#déploiement-de-mongodb)
+    - [Connexion à MongoDB](#connexion-à-mongodb)
+    - [1) Déploiement de l'API](#1-déploiement-de-lapi)
+    - [2) Connexion de l'API à MongoDB](#2-connexion-de-lapi-à-mongodb)
+    - [3) Exposer l'API à l'interieur du cluster à l'aide d'un service](#3-exposer-lapi-à-linterieur-du-cluster-à-laide-dun-service)
+    - [4) Augmenter le nombre de réplicas de l'API](#4-augmenter-le-nombre-de-réplicas-de-lapi)
+    - [5) Installer l'Ingress Controller NGINX](#5-installer-lingress-controller-nginx)
+    - [6) Exposer l'API publiquement en utilisant un Ingress](#6-exposer-lapi-publiquement-en-utilisant-un-ingress)
+    - [7) Réalisation du schéma réseau](#7-réalisation-du-schéma-réseau)
+
+---
 
 <div style="text-align: justify">
 
-## Introduction
+## Création d'un cluster Kubernetes
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla vitae elit libero, a pharetra augue. Nullam id dolor id nibh ultricies vehicula ut id elit. Donec ullamcorper nulla non metus auctor fringilla. Nulla vitae elit libero, a pharetra augue. Nullam id dolor id nibh ultricies vehicula ut id elit. Donec ullamcorper nulla non metus auctor fringilla.
+### Introduction
 
-## Concept 1
+Dans ce TP nous devons créer un cluster Kubernetes qui contient une API. Le déploiement se fait sur le Cloud Provider Azure en utilisant le service Azure Kubernetes Service (AKS).
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean nisl felis, tincidunt quis dolor nec, congue viverra enim. Ut eleifend auctor nunc, nec sollicitudin justo accumsan et. Etiam dapibus varius lobortis. Quisque porttitor dolor dignissim posuere vehicula. Nam neque felis, iaculis eget ante eget, suscipit porta dui. Morbi tortor nisi, aliquam pulvinar facilisis a, commodo sodales enim. Nunc dictum, felis ac tristique tristique, eros mauris mattis ex, in lobortis diam libero nec velit. Aenean facilisis tempor quam, nec feugiat tellus iaculis vitae. Donec placerat enim nec mollis lacinia. Donec cursus, mi et feugiat dictum, lacus urna elementum neque, non interdum ipsum nisl consequat erat. Sed erat arcu, efficitur vitae arcu a, facilisis finibus nisi. Integer congue ullamcorper ligula vel cursus. Ut vitae ligula eu nulla vehicula rhoncus.
+### Mise en place de l'environnement
+
+Pour commencer, nous devons créer un cluster Kubernetes sur Azure. Pour cela, nous allons utiliser l'outil [Azure CLI](https://docs.microsoft.com/fr-fr/cli/azure/install-azure-cli?view=azure-cli-latest). Pour l'installer, il suffit de suivre les instructions sur le lien ci-dessus.
+
+Il faut également l'outil [kubectl](https://kubernetes.io/fr/docs/tasks/tools/install-kubectl/). Il permet de gérer un cluster Kubernetes.
+
+Pour la visualisation du cluster nous allons utiliser [Lens](https://k8slens.dev/). Il permet de visualiser les ressources d'un cluster Kubernetes.
+
+Je passe les explications sur la création du cluster, car elles sont déjà présentes dans le sujet du TP.
+
+## Déploiement de l'application
+
+### Déploiement de MongoDB
+
+Pour déployer MongoDB, nous allons utiliser l'outil [Helm](https://helm.sh/). Helm est un gestionnaire de paquets pour Kubernetes. Il permet de déployer des applications sur Kubernetes.
+
+Installer Helm avec la commande suivante :
+
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+Vérifier que Helm est bien installé avec la commande suivante :
+
+```bash
+helm version
+```
+
+Note à savoir :
+
+> Un chart Helm est un package qui contient les ressources Kubernetes nécessaires pour déployer une application sur un cluster Kubernetes. Un chart peut être créé manuellement en utilisant des modèles Go, ou en utilisant un chart existant maintenu par la communauté. Un chart Helm est essentiellement une liste de ressources Kubernetes définies sous forme de modèles Go qui peuvent être utilisés pour déployer une application sur un cluster Kubernetes.
+
+Il existe un chart Helm permettant de déployer MongoDB sur Kubernetes.
+
+Il faut dans un premier temps configurer le registry où est stocké le Chart avec la commande suivante :
+
+```bash
+helm repo add bitnami https://charts.bitnami.com/bitnami
+```
+
+Il faut ensuite installer une `release` de ce Chart en utilisant la commande suivante :
+
+```bash
+helm install mongodb bitnami/mongodb -n mongodb --create-namespace
+```
+
+Cette commande va installer le Chart Helm dans le namespace `mongodb` et créer toutes les ressources Kubernetes nécessaires. Dans Kubernetes, un `namespace` est un espace logique permettant de stocker des ressources Kubernetes. C'est pratique pour organiser les ressources et gérer les privilèges. Par défaut, si le namespace n'est pas spécifié, la ressource Kubernetes sera créée dans le namespace `default`.
+
+Les ressources créées sont les suivantes :
+
+- Un `Deployment` : cette ressource définit la configuration de l'application et comment elle doit être exécutée sur le cluster. Le déploiement Kubernetes gère également la mise à l'échelle et la redémarrage de l'application en cas de panne.
+
+- Un `Service` : cette ressource expose l'application sur le réseau du cluster et permet aux autres applications de se connecter à celle-ci.
+
+- Un `Persistent Volume` : cette ressource permet de stocker les données de l'application de manière permanente, même si l'instance de l'application est redémarrée ou mise à l'échelle.
+
+- Des `Secrets` : cette ressource permet de stocker et de gérer des informations sensibles, telles que les mots de passe et les clés de chiffrement, de manière sécurisée.
+
+- Des annotations de chart Helm : cette ressource permet de stocker des informations sur le déploiement de l'application, telles que la version du chart Helm utilisée et les valeurs de configuration utilisées.
+
+### Connexion à MongoDB
+
+Pour se connecter à MongoDB, il faut utiliser le port `27017` du service `mongodb` du namespace `mongodb`. Pour cela, il faut utiliser la commande suivante :
+
+```bash
+kubectl port-forward service/mongodb -n mongodb 27017:27017
+```
+
+On peut récupérer le mot de passe de l'utilisateur `root` avec la commande suivante :
+
+```bash
+kubectl get secret --namespace mongodb mongodb -o jsonpath="{.data.mongodb-root-password}" | base64 --decode
+```
+
+### 1) Déploiement de l'API
+
+Pour déployer l'API, nous allons utiliser le fichier `api-deployment.yaml`. Ce fichier contient les ressources Kubernetes nécessaires pour déployer l'API.
+
+Voici le contenu du fichier :
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+  labels:
+    app: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: yrez/ynov-api:latest
+          ports:
+            - containerPort: 3000
+```
+
+Les mots-clés principaux du fichier sont les suivants :
+
+- `apiVersion` : Version de l'API Kubernetes utilisée. Ici, nous utilisons la version `apps/v1` qui est utilisée pour les objets `Deployment`.
+- `kind` : Type de ressource Kubernetes. Ici, nous utilisons le type `Deployment` qui permet de gérer les déploiements d'applications.
+- `metadata` : Métadonnées de la ressource Kubernetes. Ici, nous utilisons le nom `api-deployment` pour le déploiement et le label `app: api` pour le déploiement et les pods.
+- `spec` : Spécification de la ressource Kubernetes. Ici, nous utilisons le nombre de réplicas à 1, le label `app: api` pour le déploiement et les pods, le nom de l'image Docker `yrez/ynov-api:latest` et le port `3000` du container.
+
+Pour déployer l'API, il faut utiliser la commande suivante :
+
+```bash
+kubectl apply -f api-deployment.yaml
+```
+
+### 2) Connexion de l'API à MongoDB
+
+A ce stade, l'API est déployée mais ne peut pas se connecter à MongoDB. Il faut créer un `secret` Kubernetes qui contient les informations de connexion à MongoDB.
+
+Pour cela, on utilise la commande suivante :
+
+```bash
+kubectl create secret generic mongodb-uri --from-literal=MONGODB_URI=mongodb://root:password@mongodb.mongodb:27017
+```
+
+Ici on utilise `mongodb.mongodb` comme nom d'hôte car le service `mongodb` du namespace `mongodb` est accessible à l'interieur du cluster Kubernetes avec ce nom d'hôte.
+
+Il faut ensuite modifier le fichier `api-deployment.yaml` pour ajouter le `secret` dans le container de l'API.
+
+Voici le contenu du fichier :
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api-deployment
+  labels:
+    app: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+        - name: api
+          image: yrez/ynov-api:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MONGODB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-uri
+                  key: MONGODB_URI
+                  optional: false
+```
+
+Les mots-clés principaux ajoutés sont les suivants :
+
+- `env` : Liste des variables d'environnement du container. Ici, nous utilisons la référence au secret `mongodb-uri` pour récupérer la variable d'environnement `MONGODB_URI`. De plus, `optional: false` permet de rendre la variable d'environnement obligatoire.
+
+Il ne reste plus qu'à déployer l'API avec la commande suivante :
+
+```bash
+kubectl apply -f api-deployment.yaml
+```
+
+### 3) Exposer l'API à l'interieur du cluster à l'aide d'un service
+
+Dans cette étape nous allons exposer l'API à l'interieur du cluster à l'aide d'un service Kubernetes.
+
+Pour cela, nous allons utiliser le fichier `api-service.yaml`. Ce fichier contient les ressources Kubernetes nécessaires pour exposer l'API à l'interieur du cluster.
+
+Voici le contenu du fichier :
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: api-service
+spec:
+  selector:
+    app: api
+  ports:
+    - protocol: TCP
+      port: 3000
+```
+
+Les mots-clés principaux du fichier sont les suivants :
+
+- `apiVersion` : Version de l'API Kubernetes utilisée. Ici, nous utilisons la version `v1` qui est utilisée pour les objets `Service`.
+- `kind` : Type de ressource Kubernetes. Ici, nous utilisons le type `Service` qui permet de gérer les services d'applications.
+- `metadata` : Métadonnées de la ressource Kubernetes. Ici, nous utilisons le nom `api-service` pour le service.
+- `spec` : Spécification de la ressource Kubernetes. Ici, nous utilisons le label `app: api` pour le service et les pods, le port `3000` du container et le protocole `TCP`.
+
+### 4) Augmenter le nombre de réplicas de l'API
+
+Pour augmenter le nombre de réplicas de l'API, il faut modifier le fichier `api-deployment.yaml` et changer la valeur de `replicas` à 5.
+
+Ne pas oublier de déployer l'API avec la commande suivante :
+
+```bash
+kubectl apply -f api-deployment.yaml
+```
+
+### 5) Installer l'Ingress Controller NGINX
+
+Dans cette étape, nous allons installer l'Ingress Controller NGINX qui permet d'exposer des services à l'exterieur du cluster Kubernetes.
+
+Pour cela, nous allons utiliser Helm.
+
+Voici les étapes à suivre :
+
+- Ajouter le dépôt Helm de NGINX :
+
+```bash
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+```
+
+- Mettre à jour les dépôts Helm :
+
+```bash
+helm repo update
+```
+
+- Installer l'Ingress Controller NGINX :
+
+```bash
+helm install ingress-nginx ingress-nginx/ingress-nginx
+```
+
+<!-- TODO: expliquer les différentes ressources crées par Helm -->
+
+Les ressources Kubernetes suivantes sont créées :
+
+- `ClusterRole` : Rôle Kubernetes qui permet d'accéder à l'API Kubernetes.
+- `ClusterRoleBinding` : Lien entre le `ClusterRole` et un utilisateur ou un groupe d'utilisateurs.
+- `ConfigMap` : Objet Kubernetes qui permet de stocker des données.
+- `Deployment` : Déploiement d'une application Kubernetes.
+- `PodDisruptionBudget` : Objet Kubernetes qui permet de gérer les interruptions de service.
+- `Role` : Rôle Kubernetes qui permet d'accéder à l'API Kubernetes.
+- `RoleBinding` : Lien entre le `Role` et un utilisateur ou un groupe d'utilisateurs.
+
+<!-- TODO: expliquer les différentes ressources crées par Helm -->
+
+Je recupère l'adresse IP du LoadBalancer avec la commande suivante :
+
+```bash
+kubectl get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}''
+```
+
+Puis je teste la connexion avec la commande suivante :
+
+```bash
+curl 51.138.216.98
+```
+
+On tombe sur la page 404 Not Found de NGINX. C'est normal, nous n'avons pas encore exposer l'API publiquement.
+
+### 6) Exposer l'API publiquement en utilisant un Ingress
+
+Maintenant nous allons exposer l'API publiquement en utilisant un Ingress.
+
+Pour cela, nous allons utiliser le fichier `api-ingress.yaml`. Ce fichier contient les ressources Kubernetes nécessaires pour exposer l'API publiquement.
+
+Voici le contenu du fichier :
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: 'api.51.138.216.98.nip.io'
+      http:
+        paths:
+          - pathType: Prefix
+            path: '/'
+            backend:
+              service:
+                name: api-service
+                port:
+                  number: 3000
+```
+
+### 7) Réalisation du schéma réseau
 
 </div>

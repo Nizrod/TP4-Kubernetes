@@ -14,7 +14,7 @@ Ce TP nécessite d'avoir :
 
 Pour la suite de ce TP, vous utiliserez exclusivement votre environnement Linux/Unix préalablement configuré. **Veillez à ne pas utiliser votre environnement Windows ainsi que Powershell**
 
-## Création d'un cluster Kubernetes sur Azure avec AKS.
+## Création d'un cluster Kubernetes sur Azure avec AKS
 
 Dans cette partie vous allez créer un cluster Kubernetes sur le Cloud Provider Azure en utilisant le service Azure Kubernetes Service (AKS).
 
@@ -133,7 +133,7 @@ az role assignment create --assignee cc556a56-5d94-4e0a-aa73-3fd5efeec66c --role
 az role assignment create --assignee cc556a56-5d94-4e0a-aa73-3fd5efeec66c --role "Contributor" --scope $RG_ID
 ```
 
-### Télécharger Lens afin de naviguer sur le cluster.
+### Télécharger Lens afin de naviguer sur le cluster
 
 Lens est une interface graphique qui vous permettra de vous connectez à votre cluster Kubernetes et d'avoir une visualisation graphique de l'ensemble des ressources.
 
@@ -264,7 +264,7 @@ Utilisez la [documentation sur les secrets](https://kubernetes.io/docs/concepts/
 
 Une fois le secret créé, modifier la configuration du deployment afin d'injecter le secret sous la forme d'une variable d'environnement (il y a plusieurs manières de faire qui sont décrites dans le documentation des secrets).
 
-### 3) Exposer l'API à l'intérieur du cluster à l'aide d'un service.
+### 3) Exposer l'API à l'intérieur du cluster à l'aide d'un service
 
 La prochaine étape consiste à déployer un service qui va permettre d'exposer l'ensemble des pods de l'API à l'intérieur du cluster à partir d'un nom unique.
 
@@ -304,7 +304,7 @@ Expliquer les différentes ressources qui ont été créé par Helm une fois le 
 
 Assurez vous que l'Ingress Controller est fonctionnel en essayant de vous connectez à l'adresse IP du service de type LoadBalancer.
 
-### 6) Exposer l'API publiquement en utilisant un Ingress.
+### 6) Exposer l'API publiquement en utilisant un Ingress
 
 Maintenant que l'Ingress Controller est fonctionnel, vous allez exposez l'API à l'extérieur du cluster.
 
