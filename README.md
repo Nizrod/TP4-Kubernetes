@@ -291,7 +291,7 @@ Les ressources Kubernetes suivantes sont créées :
 Je recupère l'adresse IP du LoadBalancer avec la commande suivante :
 
 ```bash
-kubectl get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}''
+kubectl get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
 ```
 
 Puis je teste la connexion avec la commande suivante :
