@@ -27,6 +27,10 @@
     - [5) Installer l'Ingress Controller NGINX](#5-installer-lingress-controller-nginx)
     - [6) Exposer l'API publiquement en utilisant un Ingress](#6-exposer-lapi-publiquement-en-utilisant-un-ingress)
     - [7) Réalisation du schéma réseau](#7-réalisation-du-schéma-réseau)
+  - [Annexe](#annexe)
+    - [Installation de kubectl](#installation-de-kubectl)
+    - [Identifiant du cluster](#identifiant-du-cluster)
+    - [Résolution de l'erreur "ingress does not contain a valid IngressClass"](#résolution-de-lerreur-ingress-does-not-contain-a-valid-ingressclass)
 
 ---
 
@@ -162,7 +166,7 @@ A ce stade, l'API est déployée mais ne peut pas se connecter à MongoDB. Il fa
 Pour cela, on utilise la commande suivante :
 
 ```bash
-kubectl create secret generic mongodb-uri --from-literal=MONGODB_URI=mongodb://root:password@mongodb.mongodb:27017
+kubectl create secret generic mongodb-uri --from-literal=MONGODB_URI=mongodb://root:JWjvXqosfn@mongodb.mongodb:27017
 ```
 
 Ici on utilise `mongodb.mongodb` comme nom d'hôte car le service `mongodb` du namespace `mongodb` est accessible à l'interieur du cluster Kubernetes avec ce nom d'hôte.
@@ -276,19 +280,13 @@ helm repo update
 helm install ingress-nginx ingress-nginx/ingress-nginx
 ```
 
-<!-- TODO: expliquer les différentes ressources crées par Helm -->
-
 Les ressources Kubernetes suivantes sont créées :
 
-- `ClusterRole` : Rôle Kubernetes qui permet d'accéder à l'API Kubernetes.
-- `ClusterRoleBinding` : Lien entre le `ClusterRole` et un utilisateur ou un groupe d'utilisateurs.
-- `ConfigMap` : Objet Kubernetes qui permet de stocker des données.
-- `Deployment` : Déploiement d'une application Kubernetes.
-- `PodDisruptionBudget` : Objet Kubernetes qui permet de gérer les interruptions de service.
-- `Role` : Rôle Kubernetes qui permet d'accéder à l'API Kubernetes.
-- `RoleBinding` : Lien entre le `Role` et un utilisateur ou un groupe d'utilisateurs.
-
-<!-- TODO: expliquer les différentes ressources crées par Helm -->
+- Un `Deployment` qui définit la configuration du pod exécutant l'Ingress Controller Nginx
+- Un `Service` qui expose l'Ingress Controller Nginx sur un port spécifique du cluster
+- Un `ConfigMap` qui contient la configuration de Nginx utilisée par l'Ingress Controller
+- Un `Ingress` qui définit les règles de routage entrantes vers les services de votre application
+- Un `Secret` qui contient les certificats SSL utilisés pour chiffrer les communications entrantes vers l'Ingress Controller
 
 Je recupère l'adresse IP du LoadBalancer avec la commande suivante :
 
@@ -309,6 +307,10 @@ On tombe sur la page 404 Not Found de NGINX. C'est normal, nous n'avons pas enco
 Maintenant nous allons exposer l'API publiquement en utilisant un Ingress.
 
 Pour cela, nous allons utiliser le fichier `api-ingress.yaml`. Ce fichier contient les ressources Kubernetes nécessaires pour exposer l'API publiquement.
+
+En sachant que les Ingress fonctionnent avec des noms de domaine, nous allons utiliser le service [nip.io](https://nip.io/) qui permet de créer des noms de domaine à partir d'adresses IP.
+
+Le nom de domaine que nous allons utiliser est le suivant : `api.51.138.216.98.nip.io`.
 
 Voici le contenu du fichier :
 
@@ -332,6 +334,43 @@ spec:
                   number: 3000
 ```
 
+Les mots-clés principaux du fichier sont les suivants :
+
+- `apiVersion` : Version de l'API Kubernetes utilisée. Ici, nous utilisons la version `v1` qui est utilisée pour les objets `Ingress`.
+- `kind` : Type de ressource Kubernetes. Ici, nous utilisons le type `Ingress` qui permet de gérer les Ingress.
+- `metadata` : Métadonnées de la ressource Kubernetes. Ici, nous utilisons le nom `api-ingress` pour l'Ingress.
+- `spec` : Spécification de la ressource Kubernetes. Ici, nous utilisons le nom de domaine `api.51.138.216.98.nip.io` pour l'Ingress, le chemin `/` pour l'Ingress et le port `3000` du service `api-service`.
+
+Pour une raison inconnue, j'ai eu l'erreur suivante :
+
+```bash
+ingress does not contain a valid IngressClass
+```
+
+La solution a été de rajouter `ingressClassName: nginx` dans le fichier `api-ingress.yaml`.
+
 ### 7) Réalisation du schéma réseau
+
+Voici le schéma réseau de notre application :
+
+![Schéma réseau](./schema-reseau.png)
+
+Ici le client se connecte à l'Ingress Controller NGINX en utilisant le nom de domaine `api.51.138.216.98.nip.io` et le chemin `/`. L'Ingress Controller NGINX redirige la requête vers le service `api-service` qui est exposé sur le port `3000`. Le service `api-service` redirige la requête vers un pod `api-deployment-xxxxx` qui est exposé sur le port `3000`.
+
+## Annexe
+
+### Installation de kubectl
+
+- [Install and Set Up kubectl on Linux | Kubernetes](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
+
+### Identifiant du cluster
+
+```bash
+/subscriptions/f9d87673-ab83-4fcf-a151-22964e496b40/resourcegroups/rg-tp4-kubernetes/providers/Microsoft.ContainerService/managedClusters/aks-tp4
+```
+
+### Résolution de l'erreur "ingress does not contain a valid IngressClass"
+
+- [Kubernetes IngressClass | error="ingress does not contain a valid IngressClass" | by Sam Thomas | Medium](https://sam-thomas.medium.com/kubernetes-ingressclass-error-ingress-does-not-contain-a-valid-ingressclass-78aab72c15a6)
 
 </div>
